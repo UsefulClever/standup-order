@@ -28,8 +28,10 @@ export default function Home() {
 
   useEffect(() => {
     const storedNamesVar = localStorage.getItem('names');
+    const nameArray = storedNamesVar ? JSON.parse(storedNamesVar) : [];
     if (storedNamesVar != storedNames) {
       setStoredNames(storedNamesVar);
+      setNames(nameArray);
     }
   }, []);
 
@@ -51,8 +53,12 @@ export default function Home() {
   }, [inputNames, router.query.names, storedNames]);
 
   const copyToClipboard = (copiedPropFunction: React.Dispatch<React.SetStateAction<string>>) => {
-    router.push(`/?names=${encodeURIComponent(inputNames)}`);
-    navigator.clipboard.writeText(window.location.href);
+    const url = new URL(window.location.href);
+    url.searchParams.set('names', encodeURIComponent(inputNames));
+    console.log(url);
+    console.log(inputNames);
+    navigator.clipboard.writeText(url.toString());
+    router.push(url.toString());
     copiedPropFunction('Copied to clipboard!');
         setTimeout(() => {
           copiedPropFunction('Share this list');
