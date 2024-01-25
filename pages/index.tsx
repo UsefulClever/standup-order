@@ -7,6 +7,8 @@ export default function Home() {
   const [storedNames, setStoredNames] = useState<string>('');
   const [inputNames, setInputNames] = useState<string>('');
   const [randomizedNames, setRandomizedNames] = useState<string[]>([]);
+  const [copyBtnLbl, setCopyBtnLbl] = useState('Share this list');
+
 
   const randomizeNames = () => {
     const shuffledNames = [...names].sort(() => Math.random() - 0.5);
@@ -39,7 +41,7 @@ export default function Home() {
     }
     const urlNames = router.query.names as string;
     if (urlNames) {
-      const decodedNames = decodeURIComponent(urlNames).split(',');
+      const decodedNames = decodeURIComponent(urlNames).split(/,\s*/);
       setNames(decodedNames);
       setInputNames(decodedNames.join(', '));
     } else if (storedNamesVar) {
@@ -47,6 +49,15 @@ export default function Home() {
     }
     randomizeNames();
   }, [inputNames, router.query.names, storedNames]);
+
+  const copyToClipboard = (copiedPropFunction: React.Dispatch<React.SetStateAction<string>>) => {
+    router.push(`/?names=${encodeURIComponent(inputNames)}`);
+    navigator.clipboard.writeText(window.location.href);
+    copiedPropFunction('Copied to clipboard!');
+        setTimeout(() => {
+          copiedPropFunction('Share this list');
+        }, 5000);
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-100 text-gray-800 font-sans">
@@ -92,8 +103,11 @@ export default function Home() {
           Submit Names
         </button>
         <div>
-          <a href={`/?names=${encodeURIComponent(names.join(','))}`} className="text-blue-500 underline">
-            Share this list
+          <a onClick={(event) => {
+            event.preventDefault();
+            copyToClipboard(setCopyBtnLbl);
+          }} className="text-blue-500 underline">
+            {copyBtnLbl}
           </a>
         </div>
       </div>
