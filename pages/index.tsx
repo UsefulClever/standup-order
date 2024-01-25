@@ -29,6 +29,14 @@ export default function Home() {
     if (storedNamesVar != storedNames) {
       setStoredNames(storedNamesVar);
     }
+  }, []);
+
+
+  useEffect(() => {
+    const storedNamesVar = localStorage.getItem('names');
+    if (storedNamesVar != storedNames) {
+      setStoredNames(storedNamesVar);
+    }
     const urlNames = router.query.names as string;
     if (urlNames) {
       const decodedNames = decodeURIComponent(urlNames).split(',');
