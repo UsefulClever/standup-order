@@ -3,16 +3,26 @@ import { useRouter } from 'next/router';
 
 export default function Home() {
   const router = useRouter();
-  const [names, setNames] = useState<string[]>([]);
   const [storedNames, setStoredNames] = useState<string>('');
   const [inputNames, setInputNames] = useState<string>('');
   const [randomizedNames, setRandomizedNames] = useState<string[]>([]);
   const [copyBtnLbl, setCopyBtnLbl] = useState('Share this list');
 
 
-  const randomizeNames = () => {
-    const shuffledNames = [...names].sort(() => Math.random() - 0.5);
+  useEffect(() => {
+    // console.log('randomizedNames', randomizedNames);
+  }, [randomizedNames]);
+  
+  const randomizeNames = (namesList: string[]) => {
+    const shuffledNames = namesList.sort(() => Math.random() - 0.5);
+    // console.log('randomize2', shuffledNames);
     setRandomizedNames(shuffledNames);
+  };
+
+  const handleRandomizeClick = () => {
+    const newNames = inputNames.split(',').map(name => name.trim());
+    // console.log('click', newNames);
+    randomizeNames(newNames);
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,49 +31,44 @@ export default function Home() {
 
   const handleInputSubmit = () => {
     const newNames = inputNames.split(',').map(name => name.trim());
-    setNames(newNames);
     localStorage.setItem('names', JSON.stringify(newNames));
-    router.push(`/?names=${encodeURIComponent(inputNames)}`);
+
+    updateUrl();
+
+    randomizeNames(newNames);
   };
 
   useEffect(() => {
+    const urlNames = router.query.names as string;
     const storedNamesVar = localStorage.getItem('names');
-    const nameArray = storedNamesVar ? JSON.parse(storedNamesVar) : [];
-    if (storedNamesVar != storedNames) {
+
+    if (urlNames) {
+      const decodedNames = decodeURIComponent(urlNames).split(/,\s*/);
+      setInputNames(decodedNames.join(', '));
+      randomizeNames(decodedNames);
+    } else if (storedNamesVar && storedNamesVar != storedNames) {
+      const nameArray = storedNamesVar ? JSON.parse(storedNamesVar) : [];
       setStoredNames(storedNamesVar);
-      setNames(nameArray);
+      setInputNames(nameArray.join(', '));
+      randomizeNames(nameArray);
     }
   }, []);
 
-
-  useEffect(() => {
-    const storedNamesVar = localStorage.getItem('names');
-    if (storedNamesVar != storedNames) {
-      setStoredNames(storedNamesVar);
-    }
-    const urlNames = router.query.names as string;
-    if (urlNames) {
-      const decodedNames = decodeURIComponent(urlNames).split(/,\s*/);
-      setNames(decodedNames);
-      setInputNames(decodedNames.join(', '));
-    } else if (storedNamesVar) {
-      setNames(JSON.parse(storedNamesVar));
-    }
-    randomizeNames();
-  }, [inputNames, router.query.names, storedNames]);
-
   const copyToClipboard = (copiedPropFunction: React.Dispatch<React.SetStateAction<string>>) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('names', encodeURIComponent(inputNames));
-    console.log(url);
-    console.log(inputNames);
-    navigator.clipboard.writeText(url.toString());
-    router.push(url.toString());
+    updateUrl();
     copiedPropFunction('Copied to clipboard!');
         setTimeout(() => {
           copiedPropFunction('Share this list');
         }, 5000);
   }
+
+  const updateUrl = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('names', inputNames);
+    navigator.clipboard.writeText(url.toString());
+    router.push(url.toString());
+  };
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-100 text-gray-800 font-sans">
@@ -77,13 +82,13 @@ export default function Home() {
         </p>
         <button
           className="w-full px-4 py-2 font-bold text-blue-500 border border-blue-500 rounded hover:bg-blue-100"
-          onClick={randomizeNames}
+          onClick={handleRandomizeClick}
         >
           Randomize Names
         </button>
-        {randomizedNames.length > 0 && (
+        {randomizedNames && randomizedNames.length > 0 && (
           <div>
-            <h2 className="text-2xl">Randomized Names:</h2>
+            <h2 className="text-2xl mt-12">Randomized Names:</h2>
             <ul className="list-disc list-inside">
               {randomizedNames.map((name, index) => (
                 <li key={index} className="text-xl text-blue-500">
@@ -97,10 +102,11 @@ export default function Home() {
       <div className="w-full max-w-xl px-4 space-y-4 mt-12">
         <input
           type="text"
-          value={inputNames || names}
+          value={inputNames}
           onChange={handleInputChange}
           className="w-full border border-gray-300 rounded px-2 py-1"
           placeholder="Enter names, separated by commas"
+          name='names'
         />
         <button
           onClick={handleInputSubmit}
